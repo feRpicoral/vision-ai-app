@@ -1,0 +1,20 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "isolatedModules": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {}
+  },
+  "include": [
+    "types.d.ts",
+    "assets",
+    "src",
+    "*.config.js",
+    "*.config.ts"
+  ]
+}
