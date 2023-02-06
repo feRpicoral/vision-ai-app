@@ -8,9 +8,7 @@
     "noImplicitOverride": true,
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
-    "paths": {
-      "@components/*": ["./src/components/*"]
-    }
+    "paths": {}
   },
   "include": [
     "types.d.ts",

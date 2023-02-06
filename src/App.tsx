@@ -1,27 +1,28 @@
-import { Camera, CameraCapturedPicture, CameraType } from 'expo-camera';
+import { Camera, CameraType } from 'expo-camera';
 import { StatusBar } from 'expo-status-bar';
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback } from 'react';
 import { Button, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+import { processPicture } from './process-picture';
 
 export default function App() {
     // eslint-disable-next-line prettier/prettier
     const [cameraPermission, requestCameraPermission] = Camera.useCameraPermissions();
     const [isCameraReady, setIsCameraReady] = React.useState(false);
     const cameraRef = React.useRef<Camera>(null);
-    const [picture, setPicture] = React.useState<CameraCapturedPicture>();
 
     const takePicture = useCallback(async () => {
         if (!isCameraReady || !cameraRef.current) return;
 
-        const photo = await cameraRef.current.takePictureAsync();
-        setPicture(photo);
-    }, [isCameraReady, cameraRef]);
+        // eslint-disable-next-line prettier/prettier
+        const picture = await cameraRef.current.takePictureAsync({ base64: true });
+        await processPicture(picture);
 
-    useEffect(() => {
-        if (!picture) return;
-        // TODO Upload picture to Vision API and do something with the result
-    }, [picture]);
+        // TODO:
+        //  1. Save image preview once the picture is taken
+        //  2. Draw the bounding boxes based on google vision response
+    }, [isCameraReady, cameraRef]);
 
     if (!cameraPermission) {
         return (
