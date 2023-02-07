@@ -84,6 +84,11 @@ export default function App() {
         //  Draw the bounding boxes based on google vision response (https://www.npmjs.com/package/react-bounding-box)
     }, [isCameraReady, cameraRef]);
 
+    const closePreview = () => {
+        setPicture(undefined);
+        setInterpretation(undefined);
+    };
+
     if (!cameraPermission) {
         return (
             <View style={styles.container}>
@@ -121,55 +126,69 @@ export default function App() {
                                 }}
                             >
                                 {boudingBoxes.map((boundingBox, index) => {
-                                    console.log(
-                                        JSON.stringify(
-                                            boundingBox,
-                                            undefined,
-                                            2
-                                        )
-                                    );
-
                                     const width =
-                                        boundingBox.absoluteVertices[1].x -
-                                        boundingBox.absoluteVertices[0].x;
+                                        (boundingBox.relativeVertices[1].x -
+                                            boundingBox.relativeVertices[0].x) *
+                                        100;
 
                                     const height =
-                                        boundingBox.absoluteVertices[2].y -
-                                        boundingBox.absoluteVertices[0].y;
+                                        (boundingBox.relativeVertices[2].y -
+                                            boundingBox.relativeVertices[0].y) *
+                                        100;
+
+                                    const top =
+                                        boundingBox.relativeVertices[0].y * 100;
+
+                                    const left =
+                                        boundingBox.relativeVertices[0].x * 100;
+
+                                    // console.log(
+                                    //     JSON.stringify(
+                                    //         {
+                                    //             label: boundingBox.label,
+                                    //             top,
+                                    //             left,
+                                    //             height,
+                                    //             width,
+                                    //             relativeVertices:
+                                    //                 boundingBox.relativeVertices
+                                    //         },
+                                    //         null,
+                                    //         2
+                                    //     )
+                                    // );
+
+                                    const color = randomColor();
 
                                     return (
                                         <View
                                             key={index}
                                             style={{
-                                                height,
-                                                width,
-                                                borderWidth: 1,
+                                                // TODO: I think I messed up my Xs and Ys, that's why I switched top/left and height/width
+                                                top: `${left}%`,
+                                                left: `${top}%`,
+                                                height: `${width}%`,
+                                                width: `${height}%`,
+                                                borderWidth: 3,
                                                 borderStyle: 'solid',
                                                 position: 'absolute',
-                                                // top: boundingBox
-                                                //     .absoluteVertices[0].y,
-                                                // bottom:
-                                                //     boundingBox
-                                                //         .absoluteVertices[2].y -
-                                                //     boundingBox
-                                                //         .absoluteVertices[0].y,
-                                                // left: boundingBox
-                                                //     .absoluteVertices[0].x,
-                                                // right:
-                                                //     boundingBox
-                                                //         .absoluteVertices[1].x -
-                                                //     boundingBox
-                                                //         .absoluteVertices[0].x,
-                                                borderColor: randomColor()
+                                                borderColor: color
                                             }}
-                                        />
+                                        >
+                                            <Text
+                                                style={{
+                                                    color,
+                                                    fontWeight: 'bold'
+                                                }}
+                                            >
+                                                {boundingBox.label}
+                                            </Text>
+                                        </View>
                                     );
                                 })}
                             </View>
                             <SafeAreaView style={styles.previewContainer}>
-                                <TouchableOpacity
-                                    onPress={() => setPicture(undefined)}
-                                >
+                                <TouchableOpacity onPress={closePreview}>
                                     <Text style={styles.closePictureButton}>
                                         {'\u00d7'}
                                     </Text>
