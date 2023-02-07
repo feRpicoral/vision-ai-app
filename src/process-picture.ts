@@ -18,11 +18,11 @@ export async function processPicture(
                     {
                         maxResults: 50,
                         type: 'OBJECT_LOCALIZATION'
-                    },
-                    {
-                        maxResults: 50,
-                        type: 'LABEL_DETECTION'
                     }
+                    // {
+                    //     maxResults: 50,
+                    //     type: 'LABEL_DETECTION'
+                    // }
                 ]
             }
         ]

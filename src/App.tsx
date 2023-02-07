@@ -1,8 +1,15 @@
-import { Camera, CameraType } from 'expo-camera';
+import { Camera, CameraCapturedPicture, CameraType } from 'expo-camera';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback } from 'react';
-import { Button, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import {
+    Button,
+    ImageBackground,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
+} from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { processPicture } from './process-picture';
 
@@ -10,6 +17,7 @@ export default function App() {
     // eslint-disable-next-line prettier/prettier
     const [cameraPermission, requestCameraPermission] = Camera.useCameraPermissions();
     const [isCameraReady, setIsCameraReady] = React.useState(false);
+    const [picture, setPicture] = React.useState<CameraCapturedPicture>();
     const cameraRef = React.useRef<Camera>(null);
 
     const takePicture = useCallback(async () => {
@@ -17,11 +25,11 @@ export default function App() {
 
         // eslint-disable-next-line prettier/prettier
         const picture = await cameraRef.current.takePictureAsync({ base64: true });
+        setPicture(picture);
         await processPicture(picture);
 
         // TODO:
-        //  1. Save image preview once the picture is taken
-        //  2. Draw the bounding boxes based on google vision response (https://www.npmjs.com/package/react-bounding-box)
+        //  Draw the bounding boxes based on google vision response (https://www.npmjs.com/package/react-bounding-box)
     }, [isCameraReady, cameraRef]);
 
     if (!cameraPermission) {
@@ -49,19 +57,33 @@ export default function App() {
             <StatusBar style="auto" />
             <SafeAreaProvider>
                 <View style={styles.container}>
-                    <Camera
-                        type={CameraType.back}
-                        style={styles.camera}
-                        ref={cameraRef}
-                        onCameraReady={() => setIsCameraReady(true)}
-                    >
-                        <TouchableOpacity
-                            style={styles.takePictureButton}
-                            onPress={takePicture}
+                    {picture ? (
+                        <ImageBackground source={picture} style={{ flex: 1 }}>
+                            <SafeAreaView style={styles.previewContainer}>
+                                <TouchableOpacity
+                                    onPress={() => setPicture(undefined)}
+                                >
+                                    <Text style={styles.closePictureButton}>
+                                        {'\u00d7'}
+                                    </Text>
+                                </TouchableOpacity>
+                            </SafeAreaView>
+                        </ImageBackground>
+                    ) : (
+                        <Camera
+                            type={CameraType.back}
+                            style={styles.camera}
+                            ref={cameraRef}
+                            onCameraReady={() => setIsCameraReady(true)}
                         >
-                            <View style={styles.innerTakePictureButton} />
-                        </TouchableOpacity>
-                    </Camera>
+                            <TouchableOpacity
+                                style={styles.takePictureButton}
+                                onPress={takePicture}
+                            >
+                                <View style={styles.innerTakePictureButton} />
+                            </TouchableOpacity>
+                        </Camera>
+                    )}
                 </View>
             </SafeAreaProvider>
         </>
@@ -95,5 +117,13 @@ const styles = StyleSheet.create({
         height: 40,
         borderRadius: 20,
         backgroundColor: 'white'
+    },
+    previewContainer: {
+        flex: 1
+    },
+    closePictureButton: {
+        fontSize: 45,
+        alignSelf: 'flex-end',
+        marginRight: 20
     }
 });
