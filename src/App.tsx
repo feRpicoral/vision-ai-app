@@ -1,6 +1,6 @@
 import { Camera, CameraCapturedPicture, CameraType } from 'expo-camera';
 import { StatusBar } from 'expo-status-bar';
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import {
     Button,
     ImageBackground,
@@ -11,14 +11,58 @@ import {
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
-import { processPicture } from './process-picture';
+import { ObjectLocalizationResponse, processPicture } from './process-picture';
 
 export default function App() {
-    // eslint-disable-next-line prettier/prettier
+    /* eslint-disable prettier/prettier */
     const [cameraPermission, requestCameraPermission] = Camera.useCameraPermissions();
     const [isCameraReady, setIsCameraReady] = React.useState(false);
     const [picture, setPicture] = React.useState<CameraCapturedPicture>();
+    const [interpretation, setInterpretation] = React.useState<ObjectLocalizationResponse>();
     const cameraRef = React.useRef<Camera>(null);
+    /* eslint-enable prettier/prettier */
+
+    const computeBoundingBoxes = useCallback(() => {
+        if (!interpretation || !picture) return [];
+
+        type Vertice = { x: number; y: number };
+
+        type BoundingBox = {
+            label: string;
+            absoluteVertices: [Vertice, Vertice, Vertice, Vertice];
+        };
+
+        const boundingBoxes: BoundingBox[] = [];
+
+        for (const response of interpretation.responses) {
+            for (const annotations of response.localizedObjectAnnotations) {
+                if (
+                    annotations.boundingPoly?.normalizedVertices?.length !== 4
+                ) {
+                    console.warn(
+                        'Bounding box has not 4 vertices. Skipping...'
+                    );
+                    continue;
+                }
+
+                const boundingBox = {
+                    label: annotations.name ?? 'Unknown',
+                    absoluteVertices:
+                        annotations.boundingPoly.normalizedVertices.map(
+                            vertice => ({
+                                x: (vertice.x ?? 0) * picture.width,
+                                y: (vertice.y ?? 0) * picture.height
+                            })
+                        )
+                };
+
+                // @ts-ignore This safety check is done above
+                boundingBoxes.push(boundingBox);
+            }
+        }
+
+        return boundingBoxes;
+    }, [picture, interpretation]);
 
     const takePicture = useCallback(async () => {
         if (!isCameraReady || !cameraRef.current) return;
@@ -26,11 +70,18 @@ export default function App() {
         // eslint-disable-next-line prettier/prettier
         const picture = await cameraRef.current.takePictureAsync({ base64: true });
         setPicture(picture);
-        await processPicture(picture);
+        const result = await processPicture(picture);
+        setInterpretation(result);
 
         // TODO:
         //  Draw the bounding boxes based on google vision response (https://www.npmjs.com/package/react-bounding-box)
     }, [isCameraReady, cameraRef]);
+
+    useEffect(() => {
+        if (interpretation) {
+            console.log(JSON.stringify(computeBoundingBoxes(), null, 2));
+        }
+    }, [interpretation]);
 
     if (!cameraPermission) {
         return (

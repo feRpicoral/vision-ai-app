@@ -2,12 +2,22 @@ import { CameraCapturedPicture } from 'expo-camera';
 import { vision_v1 } from 'googleapis';
 
 import { instance } from './axios';
+import { GoogleCloudResponse, MakeRequired } from './types.helper';
+
+export type ObjectLocalizationResponse = GoogleCloudResponse<
+    MakeRequired<
+        Pick<
+            vision_v1.Schema$AnnotateImageResponse,
+            'localizedObjectAnnotations' | 'error' | 'context'
+        >,
+        'localizedObjectAnnotations'
+    >
+>;
 
 // https://cloud.google.com/vision/docs/reference/rest/v1/AnnotateImageRequest
 export async function processPicture(
     picture: CameraCapturedPicture
-): Promise<void> {
-    console.log('processPicture');
+): Promise<ObjectLocalizationResponse> {
     const body: vision_v1.Schema$BatchAnnotateImagesRequest = {
         requests: [
             {
@@ -28,11 +38,10 @@ export async function processPicture(
         ]
     };
 
-    const result =
-        await instance.post<vision_v1.Schema$BatchAnnotateImagesResponse>(
-            '/v1/images:annotate',
-            body
-        );
+    const { data } = await instance.post<ObjectLocalizationResponse>(
+        '/v1/images:annotate',
+        body
+    );
 
-    console.log(JSON.stringify(result.data, null, 2));
+    return data;
 }
