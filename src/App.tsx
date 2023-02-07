@@ -21,7 +21,7 @@ export default function App() {
 
         // TODO:
         //  1. Save image preview once the picture is taken
-        //  2. Draw the bounding boxes based on google vision response
+        //  2. Draw the bounding boxes based on google vision response (https://www.npmjs.com/package/react-bounding-box)
     }, [isCameraReady, cameraRef]);
 
     if (!cameraPermission) {
