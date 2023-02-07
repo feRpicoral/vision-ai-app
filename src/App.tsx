@@ -1,6 +1,7 @@
 import { Camera, CameraCapturedPicture, CameraType } from 'expo-camera';
 import { StatusBar } from 'expo-status-bar';
-import React, { useCallback, useEffect } from 'react';
+import randomColor from 'randomcolor';
+import React, { useCallback, useMemo } from 'react';
 import {
     Button,
     ImageBackground,
@@ -13,6 +14,14 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { ObjectLocalizationResponse, processPicture } from './process-picture';
 
+type Vertice = { x: number; y: number };
+
+type BoundingBox = {
+    label: string;
+    absoluteVertices: [Vertice, Vertice, Vertice, Vertice];
+    relativeVertices: [Vertice, Vertice, Vertice, Vertice];
+};
+
 export default function App() {
     /* eslint-disable prettier/prettier */
     const [cameraPermission, requestCameraPermission] = Camera.useCameraPermissions();
@@ -22,15 +31,8 @@ export default function App() {
     const cameraRef = React.useRef<Camera>(null);
     /* eslint-enable prettier/prettier */
 
-    const computeBoundingBoxes = useCallback(() => {
+    const boudingBoxes: BoundingBox[] = useMemo(() => {
         if (!interpretation || !picture) return [];
-
-        type Vertice = { x: number; y: number };
-
-        type BoundingBox = {
-            label: string;
-            absoluteVertices: [Vertice, Vertice, Vertice, Vertice];
-        };
 
         const boundingBoxes: BoundingBox[] = [];
 
@@ -45,18 +47,23 @@ export default function App() {
                     continue;
                 }
 
-                const boundingBox = {
+                const boundingBox: BoundingBox = {
                     label: annotations.name ?? 'Unknown',
+                    // @ts-ignore We checked the length of the array above
                     absoluteVertices:
                         annotations.boundingPoly.normalizedVertices.map(
                             vertice => ({
                                 x: (vertice.x ?? 0) * picture.width,
                                 y: (vertice.y ?? 0) * picture.height
                             })
+                        ),
+                    // @ts-ignore We checked the length of the array above
+                    relativeVertices:
+                        annotations.boundingPoly.normalizedVertices.map(
+                            ({ x, y }) => ({ x: x ?? 0, y: y ?? 0 })
                         )
                 };
 
-                // @ts-ignore This safety check is done above
                 boundingBoxes.push(boundingBox);
             }
         }
@@ -76,12 +83,6 @@ export default function App() {
         // TODO:
         //  Draw the bounding boxes based on google vision response (https://www.npmjs.com/package/react-bounding-box)
     }, [isCameraReady, cameraRef]);
-
-    useEffect(() => {
-        if (interpretation) {
-            console.log(JSON.stringify(computeBoundingBoxes(), null, 2));
-        }
-    }, [interpretation]);
 
     if (!cameraPermission) {
         return (
@@ -110,6 +111,61 @@ export default function App() {
                 <View style={styles.container}>
                     {picture ? (
                         <ImageBackground source={picture} style={{ flex: 1 }}>
+                            <View
+                                style={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    bottom: 0,
+                                    left: 0,
+                                    right: 0
+                                }}
+                            >
+                                {boudingBoxes.map((boundingBox, index) => {
+                                    console.log(
+                                        JSON.stringify(
+                                            boundingBox,
+                                            undefined,
+                                            2
+                                        )
+                                    );
+
+                                    const width =
+                                        boundingBox.absoluteVertices[1].x -
+                                        boundingBox.absoluteVertices[0].x;
+
+                                    const height =
+                                        boundingBox.absoluteVertices[2].y -
+                                        boundingBox.absoluteVertices[0].y;
+
+                                    return (
+                                        <View
+                                            key={index}
+                                            style={{
+                                                height,
+                                                width,
+                                                borderWidth: 1,
+                                                borderStyle: 'solid',
+                                                position: 'absolute',
+                                                // top: boundingBox
+                                                //     .absoluteVertices[0].y,
+                                                // bottom:
+                                                //     boundingBox
+                                                //         .absoluteVertices[2].y -
+                                                //     boundingBox
+                                                //         .absoluteVertices[0].y,
+                                                // left: boundingBox
+                                                //     .absoluteVertices[0].x,
+                                                // right:
+                                                //     boundingBox
+                                                //         .absoluteVertices[1].x -
+                                                //     boundingBox
+                                                //         .absoluteVertices[0].x,
+                                                borderColor: randomColor()
+                                            }}
+                                        />
+                                    );
+                                })}
+                            </View>
                             <SafeAreaView style={styles.previewContainer}>
                                 <TouchableOpacity
                                     onPress={() => setPicture(undefined)}
